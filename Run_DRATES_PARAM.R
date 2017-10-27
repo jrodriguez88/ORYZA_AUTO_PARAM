@@ -205,6 +205,7 @@ system("PARAM(v2).exe")
 Test <- function(ms){
     mens <- rbind(paste0('###############################################'),
                   paste0('####  The process was performed correctly. ####'),
+                  paste0('####      --->  Go to  _OutPut Folders   . ####'),
                   paste0('###############################################'))
     
 if((file.exists(ms)==T) && (file.info(ms)$size>10000)==T)
