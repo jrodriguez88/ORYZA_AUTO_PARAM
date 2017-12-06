@@ -228,5 +228,5 @@ Sys.sleep(1)
 ###################################
 ### Extract_Data_DRATES_PARAM.R ###
 ###################################
-source("Extract_DRATES_PARAM.R")
-source("Graphics_DRATES_PARAM.R")
+#source("Extract_DRATES_PARAM.R")
+#source("Graphics_DRATES_PARAM.R")
