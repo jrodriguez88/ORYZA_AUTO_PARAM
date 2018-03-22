@@ -41,12 +41,12 @@ download_ORYZA_Tools <- function(){
       (file.exists("standard.crp"))){
   } else if(havingIP()==T){
 
-    download.file(url='https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-new-version/AllTools.zip',
+    download.file(url='https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-oryza-version3/AllTools.zip',
               destfile='AllTools.zip', method='auto')
     ls_tools<- unzip('AllTools.zip', list = T)
     unzip('AllTools.zip', files = ls_tools$Name[c(2:3,6)])
 
-    download.file("https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-new-version/standard.crp",
+    download.file("https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-oryza-version3/standard.crp",
               destfile = "standard.crp", method='auto')
 
     file.remove('AllTools.zip')
