@@ -7,18 +7,19 @@
 #### Load Requeriments
 ################################
 #knitr:::input_dir()
-library(ggplot2)
-library(tidyverse)
-library(stringr)
-library(magrittr)
-library(data.table)
-library(plyr)
+#library(ggplot2)
+#library(tidyverse)
+#library(stringr)
+#library(magrittr)
+#library(data.table)
+#library(plyr)
 #if(require(openxlsx)==FALSE){install.packages("openxlsx")}
 
 
 # Work directory  :: #dirFol    <- "C:/Users/nameUser/Desktop/workspace/"
 #dirFol    <- "C:/Users/jrespinosa/Dropbox/2017/ORYZA/4. Practica Parametros/CT21375/"
-setwd(dirFol)
+#setwd(dirFol)
+dirFol <- getwd()
 dir.create(paste0(dirFol,"/_OutPut_Df"),showWarnings=F)
 dir.create(paste0(dirFol,"/_OutPut_Graphic"),showWarnings=F)
 dir.create(paste0(dirFol,"/_OutPut_Graphic/_1_Development_Rates_"),showWarnings=F)
@@ -36,14 +37,17 @@ dir.create(paste0(dirFol,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarning
 # Make Master Table called "exp_df"
 
 #exp_names <- list.files("EXP",pattern = "\\.exp$")
+exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), "FED2000")
+exp_df <- exp_names %>%
+    str_sub(1,-5) %>%
+    str_split("_") %>%
+    lapply(., rbind) %>%
+    lapply(., as.data.frame)%>%
+    bind_rows()%>%
+    setNames(c("LOC_ID", "CULTIVAR","PROJECT", "TR_N")) %>%
+    mutate(ID=paste0(LOC_ID, TR_N, PROJECT))
 
-exp_df <- list.files("EXP",pattern = "\\.exp$")
-    exp_df <- substring(exp_df,1,nchar(exp_df)-4) %>%
-    str_split(pattern = "_") 
-    exp_df <- as.data.frame(do.call("rbind",exp_df))
-    colnames(exp_df) <-c("LOC_ID", "CULTIVAR","PROJECT", "TR_N" )
-    exp_df$ID <- paste0(exp_df$LOC_ID, exp_df$TR_N, exp_df$PROJECT)
-           
+
 ################################
 ### Create DVR data.frame       
 ################################
@@ -63,23 +67,14 @@ read_DVR_drate <- function(file){
             sapply("[", 2) %>%
             as.numeric()%>%
             matrix(ncol = 4)%>%
-            tbl_df()
-        
-        
-        for (i in 1:length(DVR)) {
-            
-            DVR[[i]]$ID<- exp_df$ID[i]
-            DVR[[i]]$LOC_ID<- exp_df$LOC_ID[i]
-            DVR[[i]]$CULTIVAR<- exp_df$CULTIVAR[i]
-            DVR[[i]]$PROJECT<- exp_df$PROJECT[i]
-            DVR[[i]]$TR_N<- exp_df$TR_N[i]
-        }
-        
+            as_tibble()%>%
+            bind_cols(exp_df[i,])
+
     }
-    DVR_df <- ldply(DVR, data.frame)
-    colnames(DVR_df) <- c("DVRJ", "DVRI", "DVRP", "DVRR", "ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N")
+    DVR_df <- bind_rows(DVR)
+    colnames(DVR_df) <- c("DVRJ", "DVRI", "DVRP", "DVRR", "LOC_ID", "CULTIVAR", "PROJECT", "TR_N","ID")
     
-    return(DVR_df[c(5:9,1:4)])
+    return(DVR_df[c(9,5:8,1:4)])
     
 }
 DVR_df <- read_DVR_drate("DRATE.OUT")
@@ -99,6 +94,7 @@ read_PHEN_drate <- function(file){
     for (i in 1:length(find_TS)){
         TS[[i]] <- read_lines(file, skip = find_TS[i], n_max = 1) %>%
             str_split(pattern = ",")
+        
         TS[[i]] <- as.data.frame(do.call("rbind",TS[[i]]))
     } 
     
@@ -117,28 +113,20 @@ read_PHEN_drate <- function(file){
     } 
     PHEN <- list()
     for (i in 1:length(find_TS)) {
-        PHEN[[i]] <- cbind(TS[[i]], GDD[[i]], DAE[[i]]) 
+        PHEN[[i]] <- cbind(TS[[i]], GDD[[i]], DAE[[i]]) %>%
+            bind_cols(exp_df[i,])
     }
     
-    for (i in 1:length(find_TS)) {
-        
-        PHEN[[i]]$ID<- exp_df$ID[i]
-        PHEN[[i]]$LOC_ID<- exp_df$LOC_ID[i]
-        PHEN[[i]]$CULTIVAR<- exp_df$CULTIVAR[i]
-        PHEN[[i]]$PROJECT<- exp_df$PROJECT[i]
-        PHEN[[i]]$TR_N<- exp_df$TR_N[i]
-    }
+
     
-    
-    PHEN_df <- ldply(PHEN, data.frame)%>%
-        tbl_df()%>%
+    PHEN_df <- bind_rows(PHEN)%>%
         `colnames<-`(c("TSTR", "TSPI", "TSF",  "TSM",
                        "TGDDTR","TGDDPI","TGDDF","TGDDM",
-                       "DAETR" , "DAEPI" , "DAEF"  , "DAEM",
-                       "ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N"))
-    PHEN_df[, 1:12] <- sapply(PHEN_df[, 1:12],as.character)
-    PHEN_df[, 1:12] <- sapply(PHEN_df[, 1:12],as.numeric)
-    return(PHEN_df[c(13:17, 1:12)])
+                       "DAETR" , "DAEPI" , "DAEF"  , "DAEM" ,
+                       "LOC_ID", "CULTIVAR", "PROJECT", "TR_N", "ID")) %>%
+        mutate_at(1:12, as.character) %>% mutate_at(1:12, as.numeric)
+
+    return(PHEN_df[c(17, 13:16, 1:12)])
     
 } 
 PHEN_df <- read_PHEN_drate("DRATE.OUT")
@@ -153,33 +141,27 @@ read_biomass_param <- function(file){
     find_BM <- file %>%
         read_lines() %>%
         str_detect(pattern ="biomass values") %>%
-        which() %>%
-        -0
+        which()
+    end_BM <- file %>%
+        read_lines()%>%
+        str_detect(pattern = " Observed LAI values")%>%
+        which()%>%-1
     
     BM <- list()
     for (i in 1:length(find_BM)){
 
-    BM[[i]] <- suppressWarnings(fread(file, autostart = find_BM[i], showProgress = FALSE)) %>%
-        tbl_df() %>%
+    BM[[i]] <- suppressWarnings(fread(file, skip = find_BM[i], nrows = end_BM[i]-find_BM[i], showProgress = FALSE)) %>%
+        as_tibble() %>%
         mutate(DVS  = as.numeric(DVS), 
                WLVG = as.numeric(WLVG), 
                WLVD = as.numeric(WLVD),
                WST  = as.numeric(WST),
-               WSO  = as.numeric(WSO))%>%
-        dplyr::select(everything())
-    
-        for (i in 1:length(BM)) {
-        
-            BM[[i]]$ID<- exp_df$ID[i]
-            BM[[i]]$LOC_ID<- exp_df$LOC_ID[i]
-            BM[[i]]$CULTIVAR<- exp_df$CULTIVAR[i]
-            BM[[i]]$PROJECT<- exp_df$PROJECT[i]
-            BM[[i]]$TR_N<- exp_df$TR_N[i]
-        }
-    
+               WSO  = as.numeric(WSO),
+               ID= exp_df[i,'ID'])
     }
-    BM_df <- ldply(BM, data.frame)
-    colnames(BM_df)[6:10]<- c("ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N")
+    
+    BM_df <- bind_rows(BM) %>% left_join(exp_df, by="ID")
+    
     return(BM_df[c(6:10, 1:5)])
         
 }
@@ -195,34 +177,27 @@ read_biomass_partition_param <- function(file){
     find_PF <- file %>%
         read_lines() %>%
         str_detect(pattern ="FSO") %>%
-        which()
+        which()%>%-1
+    end_PF <- file %>%
+        read_lines() %>%
+        str_detect(pattern = "Calculated relative death rate leaves ") %>%
+        which()%>%-1
         
     
     PF <- list()
     for (i in 1:length(find_PF)){
         
-        PF[[i]] <- suppressWarnings(fread(file, autostart = find_PF[i] , showProgress = FALSE)) 
-            colnames(PF[[i]]) <- c("DVSM", "FLV", "FST", "FSO")
-                    PF[[i]] <- PF[[i]][2:nrow(PF[[i]]),]%>%
+        PF[[i]] <- suppressWarnings(fread(file, skip = find_PF[i] , nrows = end_PF[i]-find_PF[i], showProgress = FALSE)) %>%
             mutate(DVSM  = as.numeric(DVSM), 
                    FLV = as.numeric(FLV), 
                    FST = as.numeric(FST),
-                   FSO  = as.numeric(FSO))
-        
-        for (i in 1:length(PF)) {
-            
-            PF[[i]]$ID<- exp_df$ID[i]
-            PF[[i]]$LOC_ID<- exp_df$LOC_ID[i]
-            PF[[i]]$CULTIVAR<- exp_df$CULTIVAR[i]
-            PF[[i]]$PROJECT<- exp_df$PROJECT[i]
-            PF[[i]]$TR_N<- exp_df$TR_N[i]
-        }
-        
+                   FSO  = as.numeric(FSO),
+                   ID= exp_df[i,'ID'])
     }
-    PF_df <- ldply(PF, data.frame)
-    colnames(PF_df)[5:9]<- c("ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N")
     
-    return(PF_df[c(5:9, 1:4)])
+    PF_df <- bind_rows(PF) %>% left_join(exp_df, by="ID")
+
+        return(PF_df[c(5:9, 1:4)])
     
 }
 BPART_df <- read_biomass_partition_param("param.out")
@@ -236,8 +211,8 @@ read_LAI_param <- function(file){
     find_LAI <- file %>%
         read_lines() %>%
         str_detect(pattern = "Observed LAI") %>%
-        which() %>%
-        +1
+        which()
+    
     End_LAI <- file %>%
         read_lines() %>%
         str_detect(pattern = "Calculated ORYZA1") %>%
@@ -245,31 +220,19 @@ read_LAI_param <- function(file){
         -3
     LAI <- list()
     for (i in 1:length(find_LAI)){
-        LAI[[i]] <- read_lines(file, skip = find_LAI[i], n_max = End_LAI[i]-find_LAI[i]) %>%
-            str_split(pattern = "      ")
-        LAI[[i]] <- as.data.frame(do.call("rbind",LAI[[i]]))
+        LAI[[i]] <- suppressMessages(read_table(file, skip = find_LAI[i], n_max = End_LAI[i]-find_LAI[i])) %>%
+            as_tibble()%>%
+            mutate(ID=exp_df[i, 'ID'])
 
       if (nrow(LAI[[i]])<1){ 
-      LAI[[i]]<- data.frame(matrix(nrow = 1, ncol = 2))
-      }  
+      LAI[[i]]<- data.frame(DVS=NA, LAI=NA) %>%
+          mutate(ID=exp_df[i, 'ID'])
+      }
+            
+            
     } #Extract LAI from param.out --> list()
         
-               
-    for (i in 1:length(find_LAI)) {
-        
-        LAI[[i]]$ID<- exp_df$ID[i]
-        LAI[[i]]$LOC_ID<- exp_df$LOC_ID[i]
-        LAI[[i]]$CULTIVAR<- exp_df$CULTIVAR[i]
-        LAI[[i]]$PROJECT<- exp_df$PROJECT[i]
-        LAI[[i]]$TR_N<- exp_df$TR_N[i]
-    } # Assing ID
-        
-    
-    LAI_df <- ldply(LAI, data.frame)%>%
-        tbl_df()%>%
-       `colnames<-`(c("DVS", "LAI","ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N"))%>%
-        mutate(DVS =as.numeric(as.character(DVS)),
-               LAI =as.numeric(as.character(LAI)))
+    LAI_df <- bind_rows(LAI) %>% left_join(exp_df, by="ID")
 #        na.omit()
 #    `colnames<-`(c("DVS", "LAI","ID","LOC_ID", "CULTIVAR", "PROJECT", "TR_N"))
 
@@ -292,11 +255,11 @@ write.csv.df <- function(df){
         df.name <- deparse(substitute(df))
         write.csv(df, paste0(dirFol,"//_OutPut_Df//",df.name,".csv"),row.names=F,quote =F)
     }
-    write.csv.df(DVR_df)
-    write.csv.df(PHEN_df)
-    write.csv.df(BMASS_df)
-    write.csv.df(BPART_df)
-    write.csv.df(LAI_df)
+#    write.csv.df(DVR_df)
+#    write.csv.df(PHEN_df)
+#    write.csv.df(BMASS_df)
+#    write.csv.df(BPART_df)
+#    write.csv.df(LAI_df)
 
 #write.xlsx(PHEN_df,  file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet1", row.names=FALSE)
 #write.xlsx(DVR_df,   file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet2", append=TRUE, row.names=FALSE)

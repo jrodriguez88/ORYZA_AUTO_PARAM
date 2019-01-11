@@ -14,10 +14,9 @@
 #########################
 if(require(RCurl)==FALSE){install.packages("RCurl")}
 if(require(tidyverse)==FALSE){install.packages("tidyverse")}
-if(require(stringr)==FALSE){install.packages("stringr")}
-if(require(magrittr)==FALSE){install.packages("magrittr")}
+#if(require(magrittr)==FALSE){install.packages("magrittr")}
 if(require(data.table)==FALSE){install.packages("data.table")}
-if(require(plyr)==FALSE){install.packages("plyr")}
+#if(require(plyr)==FALSE){install.packages("plyr")}
 
 #if(require(xlsx)==FALSE){install.packages("xlsx")}
 # Work directory  :: #dirFol    <- "C:/Users/nameUser/Desktop/workspace/"
@@ -41,15 +40,23 @@ download_ORYZA_Tools <- function(){
       (file.exists("standard.crp"))){
   } else if(havingIP()==T){
 
+    # Download DRATES and PARAM app  
     download.file(url='https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-oryza-version3/AllTools.zip',
               destfile='AllTools.zip', method='auto')
     ls_tools<- unzip('AllTools.zip', list = T)
-    unzip('AllTools.zip', files = ls_tools$Name[c(2:3,6)])
+    unzip('AllTools.zip', files = ls_tools$Name[c(2,4)])
+    
+    # Download ORYZA.exe
+    download.file(url='https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-oryza-version3/ORYZA3.zip',
+                  destfile='ORYZA3.zip', method='auto')
+    unzip('ORYZA3.zip', files="ORYZA3.exe")
 
+    #Download standard.crp
     download.file("https://sites.google.com/a/irri.org/oryza2000/downloads/new-release/download-oryza-version3/standard.crp",
               destfile = "standard.crp", method='auto')
 
     file.remove('AllTools.zip')
+    file.remove('ORYZA3.zip')
 } else {
     mens <- rbind(paste0('#####################################################'),
                   paste0('####       WARNING! NO INTERNET CONECTION        ####'),
@@ -57,11 +64,13 @@ download_ORYZA_Tools <- function(){
                   paste0('####  ORYZA3.exe & drate(v2).exe & PARAM(v2).exe ####'),
                   paste0('####        AND CROP FILE standard.crp           ####'),
                   paste0('#####################################################'))
-    print(mens)
+    
     stopifnot((file.exists("ORYZA3.exe")) &&
                   (file.exists("drate(v2).exe")) &&
                   (file.exists("PARAM(v2).exe")) &&
                   (file.exists("standard.crp")))
+    
+    print(mens)
 }
 
 }
@@ -73,7 +82,7 @@ download_ORYZA_Tools()
 ### *.EXP files must be copy to folder called "EXP"  ###
 ########################################################
 
-exp_names <- list.files("EXP",pattern = "\\.exp$")
+exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), "FED2000")
 
 #######################
 ### Create PARAM.in ###
@@ -195,7 +204,7 @@ make_reruns2()
 #####################
 
 make_param(2,"PARAM.IN")
-Sys.sleep(1)
+Sys.sleep(3)
 system("PARAM(v2).exe")
 
 ######################################
@@ -228,5 +237,5 @@ Sys.sleep(1)
 ###################################
 ### Extract_Data_DRATES_PARAM.R ###
 ###################################
-#source("Extract_DRATES_PARAM.R")
+source("Extract_DRATES_PARAM.R")
 #source("Graphics_DRATES_PARAM.R")
