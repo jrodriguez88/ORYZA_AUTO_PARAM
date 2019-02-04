@@ -12,17 +12,19 @@
 #########################
 ### Load Requeriments ###
 #########################
-if(require(RCurl)==FALSE){install.packages("RCurl")}
-if(require(tidyverse)==FALSE){install.packages("tidyverse")}
-#if(require(magrittr)==FALSE){install.packages("magrittr")}
-if(require(data.table)==FALSE){install.packages("data.table")}
+#if(require(RCurl)==FALSE){install.packages("RCurl")}
+#if(require(tidyverse)==FALSE){install.packages("tidyverse")}
+##if(require(magrittr)==FALSE){install.packages("magrittr")}
+#if(require(data.table)==FALSE){install.packages("data.table")}
 #if(require(plyr)==FALSE){install.packages("plyr")}
 
 #if(require(xlsx)==FALSE){install.packages("xlsx")}
-# Work directory  :: #dirFol    <- "C:/Users/nameUser/Desktop/workspace/"
-#dirFol    <- "C:/Users/jrespinosa/Dropbox/2017/ORYZA/4. Practica Parametros/CT21375/"
+# Work directory  :: #path    <- "C:/Users/nameUser/Desktop/workspace/"
+#path    <- "C:/Users/jrespinosa/Dropbox/2017/ORYZA/4. Practica Parametros/CT21375/"
+#cultivar <- "FED2000"
+#path <- getwd()
 
-dirFol <- getwd()
+
 download_ORYZA_Tools <- function(){
     havingIP <- function() {
         if (.Platform$OS.type == "windows") {
@@ -76,13 +78,13 @@ download_ORYZA_Tools <- function(){
 }
 download_ORYZA_Tools()
 
-#setwd(dirFol)
+#setwd(path)
 #file <- "DRATE.OUT"
 ########################################################
 ### *.EXP files must be copy to folder called "EXP"  ###
 ########################################################
 
-exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), "FED2000")
+exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), cultivar)
 
 #######################
 ### Create PARAM.in ###
@@ -237,5 +239,5 @@ Sys.sleep(1)
 ###################################
 ### Extract_Data_DRATES_PARAM.R ###
 ###################################
-source("Extract_DRATES_PARAM.R")
+#source("Extract_DRATES_PARAM.R")
 #source("Graphics_DRATES_PARAM.R")

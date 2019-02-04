@@ -16,16 +16,16 @@
 #if(require(openxlsx)==FALSE){install.packages("openxlsx")}
 
 
-# Work directory  :: #dirFol    <- "C:/Users/nameUser/Desktop/workspace/"
-#dirFol    <- "C:/Users/jrespinosa/Dropbox/2017/ORYZA/4. Practica Parametros/CT21375/"
-#setwd(dirFol)
-dirFol <- getwd()
-dir.create(paste0(dirFol,"/_OutPut_Df"),showWarnings=F)
-dir.create(paste0(dirFol,"/_OutPut_Graphic"),showWarnings=F)
-dir.create(paste0(dirFol,"/_OutPut_Graphic/_1_Development_Rates_"),showWarnings=F)
-dir.create(paste0(dirFol,"/_OutPut_Graphic/_2_Growth_"),showWarnings=F)
-dir.create(paste0(dirFol,"/_OutPut_Graphic/_3_Partitioning_Factors"),showWarnings=F)
-dir.create(paste0(dirFol,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarnings=F)
+# Work directory  :: #path    <- "C:/Users/nameUser/Desktop/workspace/"
+#path    <- "C:/Users/jrespinosa/Dropbox/2017/ORYZA/4. Practica Parametros/CT21375/"
+#setwd(path)
+#path <- getwd()
+dir.create(paste0(path,"/_OutPut_Df"),showWarnings=F)
+dir.create(paste0(path,"/_OutPut_Graphic"),showWarnings=F)
+dir.create(paste0(path,"/_OutPut_Graphic/_1_Development_Rates_"),showWarnings=F)
+dir.create(paste0(path,"/_OutPut_Graphic/_2_Growth_"),showWarnings=F)
+dir.create(paste0(path,"/_OutPut_Graphic/_3_Partitioning_Factors"),showWarnings=F)
+dir.create(paste0(path,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarnings=F)
 
 
 #file <- "DRATE.OUT"
@@ -37,7 +37,7 @@ dir.create(paste0(dirFol,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarning
 # Make Master Table called "exp_df"
 
 #exp_names <- list.files("EXP",pattern = "\\.exp$")
-exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), "FED2000")
+exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), cultivar)
 exp_df <- exp_names %>%
     str_sub(1,-5) %>%
     str_split("_") %>%
@@ -246,6 +246,49 @@ LAI_df <- read_LAI_param("param.out")
 #file <- "DRATE.OUT"
 
 
+
+###############################
+### Create FSTR data.frame
+###############################
+
+read_FSTR_param <- function(file) {
+    
+    find_FSTR <- file %>%
+        read_lines() %>%
+        str_detect(pattern = "FSTR") %>%
+        which()-1
+    
+    pmap(list(file=file, skip=find_FSTR, nrows=1), fread) %>%
+        bind_rows() %>%
+        bind_cols(exp_df)
+}
+FSTR_df <- read_FSTR_param("param.out")
+
+
+###############################
+### Create DRLV data.frame
+###############################
+
+read_DRLV_param <- function(file) {
+    
+    find_DRLV <- file %>%
+        read_lines() %>%
+        str_detect(pattern = "DRLV") %>%
+        which()-1
+    
+    drlv_n <- file %>%
+        read_lines() %>%
+        str_detect(pattern = "Calculated fraction stem reserves") %>%
+        which()-2
+    
+ drlv_list <- pmap(list(file=file, skip=find_DRLV, nrows=drlv_n - find_DRLV), fread) 
+ names(drlv_list) <- exp_df$ID
+ 
+        drlv_list %>% bind_rows(.id="ID") %>%
+            left_join(exp_df, by="ID")
+}
+DRLV_df <- read_DRLV_param("param.out")   
+    
 ##############################
 ### Create csv files
 ##############################
@@ -253,7 +296,7 @@ LAI_df <- read_LAI_param("param.out")
 #file.names <-list("DVR_df", "PHEN_df", "BMASS_df", "BPART_df", "LAI_df")
 write.csv.df <- function(df){
         df.name <- deparse(substitute(df))
-        write.csv(df, paste0(dirFol,"//_OutPut_Df//",df.name,".csv"),row.names=F,quote =F)
+        write.csv(df, paste0(path,"//_OutPut_Df//",df.name,".csv"),row.names=F,quote =F)
     }
 #    write.csv.df(DVR_df)
 #    write.csv.df(PHEN_df)
@@ -261,11 +304,11 @@ write.csv.df <- function(df){
 #    write.csv.df(BPART_df)
 #    write.csv.df(LAI_df)
 
-#write.xlsx(PHEN_df,  file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet1", row.names=FALSE)
-#write.xlsx(DVR_df,   file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet2", append=TRUE, row.names=FALSE)
-#write.xlsx(BMASS_df, file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet3", append=TRUE, row.names=FALSE)
-#write.xlsx(BPART_df, file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet4", append=TRUE, row.names=FALSE)
-#write.xlsx(LAI_df,   file=paste0(dirFol,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet5", append=TRUE, row.names=FALSE)
+#write.xlsx(PHEN_df,  file=paste0(path,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet1", row.names=FALSE)
+#write.xlsx(DVR_df,   file=paste0(path,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet2", append=TRUE, row.names=FALSE)
+#write.xlsx(BMASS_df, file=paste0(path,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet3", append=TRUE, row.names=FALSE)
+#write.xlsx(BPART_df, file=paste0(path,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet4", append=TRUE, row.names=FALSE)
+#write.xlsx(LAI_df,   file=paste0(path,"//_OutPut_Df//",DVR.m$CULTIVAR[1],".xlsx"), sheetName="sheet5", append=TRUE, row.names=FALSE)
 
 #list_of_datasets <- list("DVR_df"=DVR_df, "PHEN_df="=PHEN_df, "BMASS_df"=BMASS_df, "BPART_df"=BPART_df, "LAI_df"=LAI_df)
 #write.xlsx(list_of_datasets, file = "writeXLSX2.xlsx")

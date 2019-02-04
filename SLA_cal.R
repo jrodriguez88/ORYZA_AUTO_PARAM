@@ -1,11 +1,26 @@
 ##### LAI Analizer #####
 
-LAI_df %>% na.omit() %>%
+LAI_df %>% select(-(`DVS       LAI`)) %>%
     ggplot(aes(DVS, LAI)) +
     geom_point()+#aes(color=LOC_ID))+
     geom_smooth(method = 'loess') +
     theme_bw() +
     facet_grid(.~LOC_ID)
+
+
+### Calculate Canopy Cover (CC) 
+LAI_df %>% select(-(`DVS       LAI`)) %>% na.omit() %>%
+    mutate(
+        k = case_when(
+            DVS <= 0.65 ~ 0.4,
+            DVS >= 1    ~ 0.6,
+            TRUE        ~ 0.5),
+        CC = 1 - exp(-k*LAI)) %>% 
+    ggplot(aes(DVS, CC)) + geom_point() + geom_smooth(se=F) +
+    facet_wrap(. ~ LOC_ID) +
+    theme_bw() +
+    labs(title = paste0("Canopy Cover (CC) - ", cultivar),
+         x = "Development Stage (DVS)")
 
 LAI <- LAI_df %>%
     left_join(BMASS_df) 

@@ -1,5 +1,5 @@
 #########################################################
-####        Make ORYZA Crop File (*.crp)             ####
+####          Make CRP Crop File (*.crp)             ####
 ####     By https://github.com/jrodriguez88          ####
 ####      ORYZA Rice Crop Model described in:        #### 
 ####   http://books.irri.org/9712201716_content.pdf  ####
