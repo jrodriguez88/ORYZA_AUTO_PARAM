@@ -22,10 +22,10 @@
 #path <- getwd()
 dir.create(paste0(path,"/_OutPut_Df"),showWarnings=F)
 dir.create(paste0(path,"/_OutPut_Graphic"),showWarnings=F)
-dir.create(paste0(path,"/_OutPut_Graphic/_1_Development_Rates_"),showWarnings=F)
-dir.create(paste0(path,"/_OutPut_Graphic/_2_Growth_"),showWarnings=F)
-dir.create(paste0(path,"/_OutPut_Graphic/_3_Partitioning_Factors"),showWarnings=F)
-dir.create(paste0(path,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarnings=F)
+#dir.create(paste0(path,"/_OutPut_Graphic/_1_Development_Rates_"),showWarnings=F)
+#dir.create(paste0(path,"/_OutPut_Graphic/_2_Growth_"),showWarnings=F)
+#dir.create(paste0(path,"/_OutPut_Graphic/_3_Partitioning_Factors"),showWarnings=F)
+#dir.create(paste0(path,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarnings=F)
 
 
 #file <- "DRATE.OUT"
@@ -39,11 +39,11 @@ dir.create(paste0(path,"/_OutPut_Graphic/_4_Partitioning_Factors"),showWarnings=
 #exp_names <- list.files("EXP",pattern = "\\.exp$")
 exp_names <- str_subset(list.files("EXP",pattern = "\\.exp$"), cultivar)
 exp_df <- exp_names %>%
-    str_sub(1,-5) %>%
-    str_split("_") %>%
+    str_sub(1,-5) %>% 
+    str_split("_") %>% 
     lapply(., rbind) %>%
-    lapply(., as.data.frame)%>%
-    bind_rows()%>%
+    lapply(., as_tibble) %>%
+    bind_rows() %>%
     setNames(c("LOC_ID", "CULTIVAR","PROJECT", "TR_N")) %>%
     mutate(ID=paste0(LOC_ID, TR_N, PROJECT))
 
@@ -57,20 +57,24 @@ read_DVR_drate <- function(file){
     find_DVR <- file %>%
         read_lines() %>%
         str_detect(pattern = "crop development") %>%
-        which() %>%
-        +0
+        which() 
+        
     
     DVR <- list()
     for (i in 1:length(find_DVR)){
         DVR[[i]] <- read_lines(file, skip = find_DVR[i], n_max = 4) %>%
-            str_split(pattern = "=") %>%
-            sapply("[", 2) %>%
-            as.numeric()%>%
-            matrix(ncol = 4)%>%
+            str_split(pattern = "=") %>% 
+            sapply("[",2) %>%
+            as.numeric() %>%
+            matrix(ncol = 4) %>%
             as_tibble()%>%
             bind_cols(exp_df[i,])
 
     }
+    
+#    pmap(list(file=file, skip=find_DVR, n_max=4), read_lines) %>% 
+#        map(., ~ str_split(., pattern = "=")) %>% map(., ~ bind_rows(.)) 
+    
     DVR_df <- bind_rows(DVR)
     colnames(DVR_df) <- c("DVRJ", "DVRI", "DVRP", "DVRR", "LOC_ID", "CULTIVAR", "PROJECT", "TR_N","ID")
     
@@ -217,10 +221,10 @@ read_LAI_param <- function(file){
         read_lines() %>%
         str_detect(pattern = "Calculated ORYZA1") %>%
         which() %>%
-        -3
+        -2
     LAI <- list()
     for (i in 1:length(find_LAI)){
-        LAI[[i]] <- suppressMessages(read_table(file, skip = find_LAI[i], n_max = End_LAI[i]-find_LAI[i])) %>%
+        LAI[[i]] <- suppressMessages(fread(file, skip = find_LAI[i], nrows = End_LAI[i]-find_LAI[i])) %>%
             as_tibble()%>%
             mutate(ID=exp_df[i, 'ID'])
 
