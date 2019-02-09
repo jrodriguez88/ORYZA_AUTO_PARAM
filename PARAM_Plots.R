@@ -11,15 +11,14 @@ DVR_tidy <- DVR_df %>%
     filter(value<0.0040) %>% #DVR!= "DVRI", 
     mutate(DVR=factor(DVR, c("DVRJ", "DVRI", "DVRP", "DVRR")))
 
-
-## Summary of development rates, 0.0040 maximun value
-DVR_tidy %>%
+summary_dvr <- DVR_tidy %>%
     group_by(DVR) %>%
-        summarise(median=median(value), 
+    summarise(median=median(value), 
               mean=mean(value),
               sd=sd(value),
               min=min(value),
-              max=max(value)) %>% View()
+              max=max(value))
+View(summary_dvr)
 
 #Function to create Stat-Summary plot of development rates 
 DVR_plot1 <- function(DVR_df, save_plot = "N") {
@@ -163,7 +162,7 @@ BPART_plot2 <- function(data, save_plot = "N") {
     plot <-  data %>%
         ggplot(aes(x=DVSM, y=Value, label=ID)) +
         geom_point(shape=1,aes(label=ID), fill="gray") +
-        geom_smooth(se=F, linetype="twodash", col="red", span=0.75) + 
+        geom_smooth(se=F, linetype="twodash", col="red") + 
         facet_grid(Partition_Parameter ~ LOC_ID) + 
         labs(x="Development Stage (DVS)",
              title = paste0("Shoot dry matter partition by Locality - ", cultivar),
@@ -245,16 +244,16 @@ PF_m1 %>% bind_rows(PF_m2, .id = "PF_m") %>%
 
 plot_pf_loess <- function(data_obs, data_sim, path, cultivar=cultivar, span=span, nse=nse, width=10, height=4) {
     
-    plot <- data_obs %>% 
+    plot <- data_obs %>% rename(DVS=DVSM) %>%
         #    mutate(Partition_Parameter=case_when(
         #        Partition_Parameter=="FLV" ~ "Leaves (FLV)",
         #        Partition_Parameter=="FST" ~ "Stems (FST)",
         #        Partition_Parameter=="FSO" ~ "Panicles (FSO)"
         #)) %>% 
-        ggplot(aes(x=DVSM, y=Value)) +
+        ggplot(aes(x=DVS, y=Value)) +
         geom_rect(data = gstage, aes(NULL, NULL, xmin=start, xmax=end, fill=Growth_Phase), 
                   ymin= 0, ymax=1) + 
-        geom_point(aes(shape=LOC_ID), size=2) +
+        geom_point(aes(shape=LOC_ID, label=ID), size=2) +
         geom_line(data=data_sim$mean,
                   aes(color=paste0("Loess - span:", span)), size=1) + 
         #    geom_smooth(se=T, span=0.3) + 
@@ -288,7 +287,45 @@ plot_pf_loess <- function(data_obs, data_sim, path, cultivar=cultivar, span=span
 #plot_pf(data_obs = PF_m2, data_sim = pf_tbs, path = path, cultivar=cultivar, span = 0.75, nse=4, width = 10, height = 4)
 #
 #pf_tbs
-
+plot_sla_loess <- function(data_obs, data_sim, path, cultivar, span, nse, width=10, height=4) {
+    
+    plot <- data_obs %>% rename(DVS=DVSM) %>%
+        #    mutate(Partition_Parameter=case_when(
+        #        Partition_Parameter=="FLV" ~ "Leaves (FLV)",
+        #        Partition_Parameter=="FST" ~ "Stems (FST)",
+        #        Partition_Parameter=="FSO" ~ "Panicles (FSO)"
+        #)) %>% 
+        ggplot(aes(x=DVS, y=Value)) +
+        geom_rect(data = gstage, aes(NULL, NULL, xmin=start, xmax=end, fill=Growth_Phase), 
+                  ymin= 0, ymax=1) + 
+        geom_point(aes(shape=LOC_ID, label=ID), size=2) +
+        geom_line(data=data_sim$mean,
+                  aes(color=paste0("Loess - span:", span)), size=1) + 
+        #    geom_smooth(se=T, span=0.3) + 
+        geom_line(data=data_sim$max, 
+                  aes(color=paste0("SE*", nse)), linetype="twodash") +
+        geom_line(data=data_sim$min, color="red", linetype="twodash") +
+        theme_bw() +
+        theme(strip.background = element_rect(fill="white")) +
+        labs(x="Development Stage (DVS)",
+             title = paste0("Specific Leaf Area (SLA) - ", cultivar),
+             y="ha/kg") +
+        scale_x_continuous(limits = c(-0.055, 2.055), expand = c(0, 0)) +
+#        scale_y_continuous(limits = c(-0.02, 1.02), expand = c(0, 0)) +
+        scale_fill_manual(name="Growth phase",
+                          values = alpha(c("chartreuse", "darkgreen", "orange1"), 0.2)) + 
+        scale_shape_discrete(name="Locality") + 
+        scale_color_manual(name="Smoth curve", values= c("darkgreen", "red")) 
+        #    scale_fill_discrete(name="Growth phase") +
+#        facet_grid(. ~ Partition_Parameter)
+    
+    ggsave(plot, filename = paste0(path, "/SLA - ", cultivar, ".png"),
+           width=width, height=height)
+    
+    plot
+    
+    
+}
 
 ## Function to plot Fraction of carbohydrates allocated to stems that is stored as reserves
 FSTR_plot <- function(FSTR_df, save_plot = "N") {
@@ -332,4 +369,7 @@ DRLV_plot <- function(DRLV_df, save_plot = "N") {
     plot
     
 }
+
+## Function to plot leaf area index and SLA
+
 

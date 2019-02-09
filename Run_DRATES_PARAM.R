@@ -166,8 +166,7 @@ make_reruns2 <- function(file="DRATE.OUT"){
     find_DVR <- file %>%
         read_lines() %>%
         str_detect(pattern = "crop development") %>%
-        which() %>%
-        +0
+        which() 
     
     DVR2 <- list()
     for (i in 1:length(find_DVR)){
@@ -214,10 +213,11 @@ system("PARAM(v2).exe")
 ######################################
 
 Test <- function(ms){
-    mens <- rbind(paste0('###############################################'),
-                  paste0('####  The process was performed correctly. ####'),
-                  paste0('####      --->  Go to  _OutPut Folders   . ####'),
-                  paste0('###############################################'))
+    mens <- cat(
+'###############################################
+####  The process was performed correctly. ####
+####      --->  Go to  _OutPut Folders   . ####
+###############################################')
     
 if((file.exists(ms)==T) && (file.info(ms)$size>10000)==T)
     {

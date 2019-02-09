@@ -161,7 +161,7 @@ read_biomass_param <- function(file){
                WLVD = as.numeric(WLVD),
                WST  = as.numeric(WST),
                WSO  = as.numeric(WSO),
-               ID= exp_df[i,'ID'])
+               ID= exp_df$ID[i])
     }
     
     BM_df <- bind_rows(BM) %>% left_join(exp_df, by="ID")
@@ -196,7 +196,7 @@ read_biomass_partition_param <- function(file){
                    FLV = as.numeric(FLV), 
                    FST = as.numeric(FST),
                    FSO  = as.numeric(FSO),
-                   ID= exp_df[i,'ID'])
+                   ID= exp_df$ID[i])
     }
     
     PF_df <- bind_rows(PF) %>% left_join(exp_df, by="ID")
@@ -226,11 +226,11 @@ read_LAI_param <- function(file){
     for (i in 1:length(find_LAI)){
         LAI[[i]] <- suppressMessages(fread(file, skip = find_LAI[i], nrows = End_LAI[i]-find_LAI[i])) %>%
             as_tibble()%>%
-            mutate(ID=exp_df[i, 'ID'])
+            mutate(ID=exp_df$ID[i])
 
       if (nrow(LAI[[i]])<1){ 
       LAI[[i]]<- data.frame(DVS=NA, LAI=NA) %>%
-          mutate(ID=exp_df[i, 'ID'])
+          mutate(ID=exp_df$ID[i])
       }
             
             

@@ -49,13 +49,40 @@ PF_m2 <- BPART_df %>%
             Value>1 ~ 1,
             TRUE ~ Value))
 
+### SLA_df
+SLA_max <- function(SLA_df, fr=0.5) {
+    SLA_df %>%
+        filter(DVSM<fr) %>%
+        lm(SLA~DVSM, data = .) %>%
+        summary() %>%
+        .$coefficients %>% as_tibble() %>%
+        mutate(par=Estimate+1.96*`Std. Error`) %>%
+        .$par %>%
+        .[1]
+}
+
+SLA_df <- LAI_df %>%
+    select(ID, LOC_ID, DVS, LAI) %>% na.omit() %>%
+    left_join(BMASS_df) %>%
+    mutate(SLA = LAI/WLVG, Value = SLA) %>%
+    filter(SLA <= 0.0045) %>%
+    rename(DVSM = DVS)
+
 
 
 # Function to get mean, minimun and maximun partition factor tables
 Loess_crp <- function(data, DVS, span=0.5, nse=4) {
     
+    #data convert to list
+    if(any(str_detect(names(data), "SLA"))){
+        SLA_max = SLA_max(data)
+        data = list(SLA=data)
+    } else {data=split(data, data$Partition_Parameter)}
+    
+    
+    
     # Function to create crp tb
-    crp_pf_tb <- function(data){
+    crp_pf_tb <- function(data) {
         
         data %>% bind_rows(.id = "Partition_Parameter") %>%
             mutate(
@@ -79,17 +106,28 @@ Loess_crp <- function(data, DVS, span=0.5, nse=4) {
                        TRUE ~ FSO),
                    PF_sum2= FLV+FSO+FST,
                    Test_log = (FLV+FSO+FST)==1) %>%
-            rename(DVSM=DVS) %>%
-            select(DVSM, FLV, FST, FSO) %>%
+#            rename(DVSM=DVS) %>%
+            select(DVS, FLV, FST, FSO) %>%
             gather(Partition_Parameter, Value, -1) %>%
             mutate(Partition_Parameter = factor(Partition_Parameter,
                                                 c("FLV", "FST", "FSO"))) %>%
-            select(Partition_Parameter, DVSM, Value)
+            select(Partition_Parameter, DVS, Value)
         
     }
     
-    #data convert to list    
-    data=split(data, data$Partition_Parameter)
+    crp_sla_tb <- function(data, SLA_max) {
+        
+        data %>% bind_rows() %>%
+            mutate(
+                Value=case_when(
+                    DVS == 0 ~ SLA_max,
+                    Value < 0 | is.na(Value) ~ min(Value, na.rm = T),
+                    TRUE ~ Value))
+        
+    }
+    
+
+    
     
     #Loess model by Partition factor    
     mod1 <- lapply(data, function(x){loess(Value~DVSM, data = x, span = span)}) %>%
@@ -107,10 +145,17 @@ Loess_crp <- function(data, DVS, span=0.5, nse=4) {
                                                        Value=x$fit-nse*x$se.fit)})
     
     
-    crp_list <- list(
-        mean = crp_pf_tb(PTB_crp_mean),
-        min = crp_pf_tb(PTB_crp_min),
-        max = crp_pf_tb(PTB_crp_max))
+    if(any(str_detect(names(data), "SLA"))){
+        crp_list <- list(
+            mean = crp_sla_tb(PTB_crp_mean, SLA_max),
+            min =  crp_sla_tb(PTB_crp_max, SLA_max),
+            max =  crp_sla_tb(PTB_crp_min, SLA_max))
+    } else {
+        crp_list <- list(
+            mean = crp_pf_tb(PTB_crp_mean),
+            min = crp_pf_tb(PTB_crp_min),
+            max = crp_pf_tb(PTB_crp_max))}
+    
     
     return(crp_list)
     
