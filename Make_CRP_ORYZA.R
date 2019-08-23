@@ -14,7 +14,7 @@
 ### Function to join oryza params into list
 
 # 'data' is a tibble 
-data <- crp_params
+
 
 Make_CRP_ORYZA <- function(cultivar, data, SWISLA='TABLE') {
     crp_tb <- function(tb, sig=5) {
@@ -196,7 +196,7 @@ cat(paste0("FSTR  = ", round(data$FSTR, 3)))
 cat('\n')
 
 cat("TCLSTR = 10.       ! Time coefficient for loss of stem reserves (1 d-1)", sep='\n')
-cat(paste0("SPGF   = ", data$SPGF ))
+cat(paste0("SPGF   = ", sprintf("%.1f", data$SPGF )))
 cat('\n')
 cat(paste0("WGRMX  = ", sprintf("%.7f", data$WGRMX)), sep = '\n')                                                                              
 cat('\n')
@@ -356,4 +356,4 @@ sink()
 
 }
 
-Make_CRP_ORYZA(cultivar, data)
+Make_CRP_ORYZA(cultivar, crp_params)
