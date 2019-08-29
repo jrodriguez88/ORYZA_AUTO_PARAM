@@ -23,7 +23,7 @@ get_metrics <- function(data) {
 
 
 ## extract_sim_var function to extract simulatio data by variable (phen, dry_matter, yield, lai)
-extract_sim_var <- function(sim_data, exp_set, variable = "phen") {
+extract_sim_var <- function(sim_data, exp_set, variable) {
     
     vars <- switch(variable, 
                    dry_matter = c("date", "DVS", "WAGT", "WLVG", "WST", "WSO", "WLVD"), 
@@ -86,7 +86,7 @@ extract_sim_var <- function(sim_data, exp_set, variable = "phen") {
 }
 
 ### extract from base data
-extract_obs_var <- function(obs_data, exp_set, variable = "dry_matter") {
+extract_obs_var <- function(obs_data, exp_set, variable) {
     
     # vars select shet names required
     vars <- switch(variable, 
@@ -171,10 +171,10 @@ extract_obs_var <- function(obs_data, exp_set, variable = "dry_matter") {
 
 
 ## eval_sim_oryza fucntion to summarise and compute observed vs simulate values
-eval_sim_oryza <- function(obs_data, sim_data, variable = "phen", by_var = T) {
+eval_sim_oryza <- function(obs_data, sim_data, exp_set, variable = "phen", by_var = T) {
     
-    sim_ <- extract_sim_var(sim_data, cal_set, variable = variable)
-    obs_ <- extract_obs_var(obs_data, cal_set, variable = variable)
+    sim_ <- extract_sim_var(sim_data, exp_set, variable = variable)
+    obs_ <- extract_obs_var(obs_data, exp_set, variable = variable)
     
     id_join <- if(variable == "phen" | variable == "yield"){ 
         c("exp_file", "var")
@@ -185,9 +185,10 @@ eval_sim_oryza <- function(obs_data, sim_data, variable = "phen", by_var = T) {
     
     test_select <- obs_ %>%
         left_join(sim_, by = id_join) %>%
-        rename_at(vars(ends_with(".x")), funs(paste("obs"))) %>%
-        rename_at(vars(ends_with(".y")), funs(paste("sim"))) %>% 
-        filter(complete.cases(.))
+        rename_at(vars(ends_with(".x")), list(~paste("obs"))) %>%
+        rename_at(vars(ends_with(".y")), list(~paste("sim"))) %>% 
+        filter(complete.cases(.), obs > 0)
+        
     
     if(by_var == TRUE){
         
@@ -227,13 +228,16 @@ eval_sim_oryza <- function(obs_data, sim_data, variable = "phen", by_var = T) {
 }
 
 #vars <- c("phen", "dry_matter", "lai",  "yield")
-metrics <- map(vars, ~eval_sim_oryza(obs_data, sim_data, .x, T)) %>% bind_rows() %>% 
-unnest(data) %>% ggplot(aes(obs, sim, color = exp_file)) + geom_point() +
-    expand_limits(x = 0, y = 0) + 
-    geom_abline(intercept = 0, slope = 1, linetype = "twodash", size=1)+
-    geom_abline(intercept = 0, slope = 1.15, linetype = "twodash", size=0.5, color = "red") +
-    geom_abline(intercept = 0, slope = 0.85, linetype = "twodash", size=0.5, color = "red") + 
-    facet_wrap(~var, scales = "free") + 
-    theme_bw()
-#metrics %>% mutate(plot = map2(plot, var, ~.x + ggtitle(.y))) %>% pull(plot)
+#metrics <- map(vars, ~eval_sim_oryza(data, sim_data, cal_set, .x, F)) %>% bind_rows()
+#
+#metrics %>% unnest(data) %>% 
+#    mutate(locality = str_sub(exp_file, 1, 4)) %>%
+#    ggplot(aes(obs, sim, color = locality)) + geom_point() +
+#    expand_limits(x = 0, y = 0) + 
+#    geom_abline(intercept = 0, slope = 1, linetype = "twodash", size=1)+
+#    geom_abline(intercept = 0, slope = 1.15, linetype = "twodash", size=0.5, color = "red") +
+#    geom_abline(intercept = 0, slope = 0.85, linetype = "twodash", size=0.5, color = "red") + 
+#    facet_wrap(~var, scales = "free") + 
+#    theme_bw()
+##metrics %>% mutate(plot = map2(plot, var, ~.x + ggtitle(.y))) %>% pull(plot)
 

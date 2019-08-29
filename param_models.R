@@ -66,7 +66,7 @@ SLA_df <- LAI_df %>%
     left_join(BMASS_df) %>%
     mutate(SLA = LAI/WLVG, Value = SLA) %>%
     filter(SLA <= 0.0045) %>%
-    rename(DVSM = DVS)
+    dplyr::rename(DVSM=DVS)
 
 
 

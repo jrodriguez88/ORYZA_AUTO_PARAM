@@ -232,7 +232,7 @@ BPART_plot3 <- function(data, save_plot = "N") {
 
 PF_m1 %>% bind_rows(PF_m2, .id = "PF_m") %>% 
     group_by(PF_m, Partition_Parameter) %>%
-    summarize(N_obs=n()) %>% View()
+    dplyr::summarize(N_obs=n()) %>% View()
 
 #DVS <- c(seq(0, 0.8, 0.25), seq(1, 2.5, 0.5))
 
@@ -381,7 +381,7 @@ SPGF_plot <- function(SPGF_df, save_plot = "N") {
     lm_spgf <- lm(formula = SPIK_M2_max ~ diff_pi_fl, data = SPGF_df)
     
     plot <- ggplot(SPGF_df, aes(diff_pi_fl, SPIK_M2_max))+
-        geom_point(aes(shape=LOC_ID, label=ID))+
+        geom_point(aes(shape=LOC_ID, label=ID, color = LOC_ID))+
         geom_smooth(method = "lm", se = F, linetype="twodash")+
         theme_bw()+
         xlab("Growth between PI and flowering (g/m²)")+
